@@ -17,7 +17,7 @@ import os
 train_file = 'train.csv'
 test_file = 'test.csv'
 
-model = MLPClassifier(hidden_layer_sizes=(210, 105, 52, 26, 13, 6, 3, 1), 
+model = MLPClassifier(hidden_layer_sizes=(210, 105, 52, 26, 13, 6, 3, 1), #final model when not using UMAP
                         activation='relu', 
                         solver='adam', 
                         alpha=0.0001,
@@ -45,8 +45,8 @@ model_umap = MLPClassifier(hidden_layer_sizes=(50, 100, 25),
                             max_iter=500, 
                             random_state=1)
 
-model_umap2 = MLPClassifier(hidden_layer_sizes=(200, 100, 50, 25), 
-                        activation='relu', 
+model_umap2 = MLPClassifier(hidden_layer_sizes=(200, 100, 50, 25), #Final model when using UMAP
+                        activation='tanh', 
                         solver='adam', 
                         alpha=0.001,
                             batch_size=64, 

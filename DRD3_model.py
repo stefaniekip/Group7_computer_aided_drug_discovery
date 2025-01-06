@@ -28,7 +28,10 @@ class data_preparation:
 
     def file_preparation(self):
         """
-        This function reads the file and extracts the smiles
+        This function reads the file and extracts the smiles.
+
+        Returns:
+            DataFrame: Cleaned data
         """
         data = pd.read_csv(self.file)
 
@@ -54,6 +57,12 @@ class data_preparation:
         return cleaned_data
 
     def get_descriptors(self):
+        '''
+        Computes chemical descriptors for the molecules.
+
+        Returns:    
+            Dataframe: Each molecule with computed descriptors. 
+        '''
         descriptor_data = [] # Initializes a list that will hold all descriptors
 
         descriptor_names = [n[0] for n in Descriptors._descList] # Finds all possible descriptors and stores these in descriptor_names
@@ -88,6 +97,12 @@ class data_preparation:
         return(descriptors)
     
     def normalize_data(self):
+        '''
+        Normalizes data, excluding binary and identifier columns.
+
+        Returns:
+            DataFrame: Each molecule with normalized descriptors.
+        '''
         # check which columns should be excluded from normalization
         NOT_normalize_columns = []
         for column in self.descriptors.columns:
@@ -109,18 +124,34 @@ class data_preparation:
         return self.descriptors
     
     def umap_preparation(self):
+        '''
+        Applies UMAP to the data.
+
+        Returns:
+            Array: with (n_samples, n_components)
+        '''
+        #Initialize the UMAP reducer by the number of components
         reducer = UMAP(self.n_components)
         if self.train_or_test == 'Train':
             data = self.descriptors_train.drop(['target_feature', 'SMILES_canonical'], axis=1)
         else:
             data = self.descriptors_test.drop(['Unique_ID', 'SMILES_canonical'], axis=1)
-                                
+
+        #Scale the data                     
         scaled_train_data = StandardScaler().fit_transform(data)
+
+        #Apply the dimension reduction
         embedding = reducer.fit_transform(scaled_train_data)
 
         return embedding
 
     def umap(self):
+        '''
+        Converts the UMAP data into a dataframe to make it compatible with the neural network.
+
+        Returns:
+            Tuple: a tuple containing two dataframes. The first dataframe is the training data after applying UMAP. The second dataframe is the test data after applying UMAP. 
+        '''
         #Normalize the umap data
         data_train = normalize(self.umap_data_train)
         data_test = normalize(self.umap_data_test)
@@ -156,6 +187,9 @@ class neural_network:
         self.umap_data_train = umap_data_train
 
     def train_model(self):
+        '''
+        Trains the model with either UMAP-transformed data or original descriptors.
+        '''
         if self.umap:
             X = self.umap_data_train.drop(['target_feature'], axis = 1) # Get all the feature data
             y = self.umap_data_train['target_feature'] # Get all the target values 
@@ -167,6 +201,9 @@ class neural_network:
         self.model.fit(X,y)
 
     def predict_outcome(self):
+        '''
+        Predicts using the trained model and saves these results to a CSV file.
+        '''
         if self.umap:
             X_test = self.umap_data_test.drop(['Unique_ID'], axis = 1) # Get all the feature data
             filename = "molecule_predictions_umap.csv" #To get the right filename
@@ -182,6 +219,12 @@ class neural_network:
         print("File saved at:", os.path.abspath(filename))
 
     def accuracy_train_data(self):
+        '''
+        Calculates and prints the accuracy of the model on the dataset given.
+         
+        It does this by splitting the dataset into training and testing datasets. Training the model on the training dataset and testing it on the test dataset. 
+        This can be done on UMAP data as well if UMAP is applied.
+        '''
         if self.umap:
             X = self.umap_data_train.drop(['target_feature'], axis=1) # Get all the feature data
             y = self.umap_data_train['target_feature'] # Get all the target values
@@ -197,6 +240,9 @@ class neural_network:
         print("Balanced accuracy:", balanced_accuracy_score(y_test, predictions), ', Umap is', self.umap)
 
     def cross_validation(self):
+        '''
+        Calculates and prints the cross validation of the model on the dataset given.
+        '''
         if self.umap:
             X = self.umap_data_train.drop(['target_feature'], axis=1) # Get all the feature data
             y = self.umap_data_train['target_feature'] # Get all the target values
@@ -210,7 +256,7 @@ class neural_network:
 
 def drd3_model(train_file, test_file, model, model_umap, n_components):
     '''
-    Running all the classes and functions
+    Running all the classes and functions. 
     '''
     train_data_prep = data_preparation(train_file, 'Train')
     train_data = train_data_prep.file_preparation()
@@ -245,5 +291,3 @@ def drd3_model(train_file, test_file, model, model_umap, n_components):
     neural_network_umap.predict_outcome()
     neural_network_umap.accuracy_train_data()
     neural_network_umap.cross_validation()
-
-    return normalized_train_data, normalized_test_data
